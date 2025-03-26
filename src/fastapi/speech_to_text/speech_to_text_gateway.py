@@ -1,4 +1,0 @@
-
-
-class STTHandler:
-    pass
