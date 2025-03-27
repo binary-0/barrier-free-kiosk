@@ -83,7 +83,7 @@ def analyze_order(state: WorkflowState) -> Dict[str, Any]:
                     "price": 가격
                 }}
             ],
-            "total_price": 총가격,
+            "total_price": 총 가격,
             "special_requests": "특별 요청사항",
             "clarification_items": ["명확하지 않은 항목1"]
         }}
@@ -108,10 +108,9 @@ def analyze_order(state: WorkflowState) -> Dict[str, Any]:
            - 커피 메뉴의 경우: "<메뉴명>을 디카페인으로 드릴까요, 일반 카페인으로 드릴까요?"
            - 티 메뉴의 경우: "<메뉴명>에 휘핑크림을 추가할까요?"
            
-        5. 필수 옵션이 모두 선택되었고 더 이상 명확화할 항목이 없을 때, 사용자에게 "더 주문하실 것이 있으신가요?"라고 물어보세요. 이 경우 clarification_items에는 "더 주문하실 것이 있으신가요?"를 포함시키세요.
+        5. 필수 옵션이 모두 선택되었고 더 이상 명확화할 항목이 없을 때, 사용자에게 "더 주문하실 것이 있으신가요?"라고 greeting_response에 추가하고, clarification_items은 빈 배열로 설정하세요.
         
         이전 대화와 보류 중인 명확화 항목을 고려하여 응답해주세요. 이미 응답된 항목에 대해서는 다시 물어보지 마세요.
-        주문 완료 여부나 세션 관리는 당신의 책임이 아니므로, order_complete이나 should_continue_ordering 같은 필드는 포함하지 마세요.
         """
         
         messages = [SystemMessage(content=system_prompt)]
