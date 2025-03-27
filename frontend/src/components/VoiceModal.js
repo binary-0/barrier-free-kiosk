@@ -233,8 +233,15 @@ const VoiceModal = ({ isOpen, onClose, onOrderComplete }) => {
             console.log('명확화 응답 결과:', result);
             
             if (result.status === 'success' && result.data) {
-              // 서버 응답 저장
-              setResponse(result.data);
+              // 서버 응답 저장 - 명확화 항목이 있으면 response.message를 대체
+              if (result.data.needs_clarification && result.data.clarification_items && result.data.clarification_items.length > 0) {
+                setResponse({
+                  ...result.data,
+                  message: result.data.clarification_items[0]
+                });
+              } else {
+                setResponse(result.data);
+              }
               
               // 주문 상태 업데이트
               if (result.data.order && result.data.order.items) {
@@ -249,9 +256,9 @@ const VoiceModal = ({ isOpen, onClose, onOrderComplete }) => {
               if (result.data.is_casual_conversation) {
                 console.log('일상 대화 감지됨, 명확화 상태 유지');
                 // 명확화 상태 유지 (원래 상태로 돌아감)
-                // 상태 메시지만 잠시 업데이트 후 다시 명확화 상태로 복귀
                 setStatus('추가 정보를 마이크 버튼을 눌러 음성으로 알려주세요');
-                // 명확화 아이템이 있는 경우 계속 표시
+                
+                // 명확화 아이템이 있는 경우 계속 표시하지만 별도 컨테이너로 보여주지 않음
                 if (result.data.clarification_items && result.data.clarification_items.length > 0) {
                   setNeedsClarification(true);
                   setClarificationItem(result.data.clarification_items[0]);
@@ -275,7 +282,7 @@ const VoiceModal = ({ isOpen, onClose, onOrderComplete }) => {
             } else {
               throw new Error('서버 응답 형식이 올바르지 않습니다');
             }
-          } 
+          }
           // 일반 주문 분석 모드
           else {
             setStatus('주문 분석 중...');
@@ -283,8 +290,17 @@ const VoiceModal = ({ isOpen, onClose, onOrderComplete }) => {
             console.log('서버 응답 수신:', result);
             
             if (result.status === 'success' && result.data) {
-              // 서버 응답 저장
-              setResponse(result.data);
+              // 명확화 항목이 있으면 response.message를 대체
+              if (result.data.needs_clarification && result.data.clarification_items && result.data.clarification_items.length > 0) {
+                // 서버 응답 저장 (메시지 대체)
+                setResponse({
+                  ...result.data,
+                  message: result.data.clarification_items[0]
+                });
+              } else {
+                // 서버 응답 그대로 저장
+                setResponse(result.data);
+              }
               
               // 주문 상태 업데이트
               if (result.data.order && result.data.order.items) {
@@ -299,12 +315,6 @@ const VoiceModal = ({ isOpen, onClose, onOrderComplete }) => {
               if (result.data.is_casual_conversation) {
                 console.log('일상적인 대화 감지:', result.data.message);
                 setStatus('대화 중...');
-                // 일상적인 대화 응답을 표시
-                setResponse({
-                  ...result.data,
-                  // 응답 메시지가 greeting_response이면 이 값을 사용
-                  message: result.data.message
-                });
                 // 일상적인 대화인 경우에는 명확화 UI를 숨김
                 setNeedsClarification(false);
                 setClarificationItem('');
@@ -478,6 +488,12 @@ const VoiceModal = ({ isOpen, onClose, onOrderComplete }) => {
                 ) : (
                   response.message
                 )}
+                
+                {needsClarification && (
+                  <InstructionText style={{ marginTop: '1rem', display: 'block' }}>
+                    마이크 버튼을 누르고 추가 정보를 말씀해주세요
+                  </InstructionText>
+                )}
               </ResponseText>
             )}
             
@@ -498,21 +514,6 @@ const VoiceModal = ({ isOpen, onClose, onOrderComplete }) => {
                   총 금액: {currentOrder.total_price}원
                 </div>
               </ResponseText>
-            )}
-            
-            {needsClarification && clarificationItem && (
-              <ClarificationContainer
-                animate={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 20 }}
-              >
-                <ClarificationItem>
-                  {clarificationItem}
-                </ClarificationItem>
-                
-                <InstructionText>
-                  마이크 버튼을 누르고 추가 정보를 말씀해주세요
-                </InstructionText>
-              </ClarificationContainer>
             )}
           </ModalContent>
         </ModalOverlay>
