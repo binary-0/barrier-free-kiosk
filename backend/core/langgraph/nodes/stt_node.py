@@ -33,7 +33,7 @@ def load_model():
     if model is None:
         logger.info("Whisper 모델 로딩 중 (small)...")
         start_time = time.time()
-        model = whisper.load_model("small")
+        model = whisper.load_model("medium")
         logger.info(f"Whisper 모델 로딩 완료 ({time.time() - start_time:.2f}초)")
     return model
 

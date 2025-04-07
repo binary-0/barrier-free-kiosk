@@ -32,8 +32,10 @@ from core.langgraph.graph import create_order_analysis_workflow
 from core.langgraph.state import WorkflowState
 from core.db import init_db, populate_db, get_menu_categories
 from core.models.order import OrderSessionManager
+from core.langgraph.nodes.stt_node import load_model
 
 app = FastAPI()
+load_model()
 
 # CORS 설정
 app.add_middleware(
