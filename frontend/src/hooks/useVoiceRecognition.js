@@ -10,7 +10,7 @@ const useVoiceRecognition = () => {
   useEffect(() => {
     let stream = null;
     
-    // 컴포넌트 언마운트 시 마이크 해제
+    
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -38,14 +38,14 @@ const useVoiceRecognition = () => {
       
       console.log("마이크 액세스 성공, 레코더 생성 중...");
       
-      // 미디어 레코더 생성
+      
       const recorder = new MediaRecorder(stream, { 
         mimeType: 'audio/webm;codecs=opus',
         audioBitsPerSecond: 128000
       });
       setMediaRecorder(recorder);
       
-      // 데이터 수집 이벤트 
+      
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           console.log(`오디오 청크 추가: ${e.data.size} bytes`);
@@ -53,7 +53,7 @@ const useVoiceRecognition = () => {
         }
       };
       
-      // 녹음 완료 이벤트
+      
       recorder.onstop = () => {
         console.log(`녹음 완료: ${audioChunksRef.current.length} 청크`);
         if (audioChunksRef.current.length > 0) {
@@ -65,18 +65,18 @@ const useVoiceRecognition = () => {
           setError("음성이 감지되지 않았습니다. 다시 시도해주세요.");
         }
         
-        // 스트림 릴리스
+        
         stream.getTracks().forEach(track => track.stop());
       };
       
-      // 에러 이벤트
+      
       recorder.onerror = (event) => {
         console.error("녹음 중 오류:", event.error);
         setError(`녹음 중 오류가 발생했습니다: ${event.error}`);
       };
       
-      // 녹음 시작
-      recorder.start(100); // 100ms마다 데이터 수집
+      
+      recorder.start(100); 
       console.log("녹음 시작됨");
       setIsListening(true);
       
@@ -110,4 +110,4 @@ const useVoiceRecognition = () => {
   };
 };
 
-export default useVoiceRecognition; 
+export default useVoiceRecognition;

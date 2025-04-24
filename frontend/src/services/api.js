@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// API 기본 설정
+
 const API_BASE_URL = 'http://localhost:8000';
 
 const api = axios.create({
@@ -10,7 +10,7 @@ const api = axios.create({
   },
 });
 
-// 세션 ID 관리
+
 let sessionId = localStorage.getItem('session_id') || null;
 
 export const setSessionId = (id) => {
@@ -25,7 +25,7 @@ export const clearSessionId = () => {
   localStorage.removeItem('session_id');
 };
 
-// API 함수들
+
 export const fetchMenus = async () => {
   try {
     const response = await api.get('/menu');
@@ -39,7 +39,7 @@ export const fetchMenus = async () => {
 export const analyzeOrder = async (audioBlob) => {
   try {
     const formData = new FormData();
-    // 타임스탬프를 포함한 고유한 파일명 생성
+    
     const timestamp = Date.now();
     const uniqueFilename = `audio_recording_${timestamp}.webm`;
     formData.append('audio_file', audioBlob, uniqueFilename);
@@ -58,7 +58,7 @@ export const analyzeOrder = async (audioBlob) => {
       },
     });
     
-    // 세션 ID 저장
+    
     if (response.data.session_id) {
       setSessionId(response.data.session_id);
     }
@@ -77,7 +77,7 @@ export const respondToClarification = async (audioBlob) => {
     }
     
     const formData = new FormData();
-    // 타임스탬프를 포함한 고유한 파일명 생성
+    
     const timestamp = Date.now();
     const uniqueFilename = `clarification_response_${timestamp}.webm`;
     formData.append('audio_file', audioBlob, uniqueFilename);
@@ -98,4 +98,4 @@ export const respondToClarification = async (audioBlob) => {
   }
 };
 
-export default api; 
+export default api;
