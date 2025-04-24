@@ -5,15 +5,6 @@ from ...db import get_menu_categories, get_menu_by_id, get_menu_by_name
 logger = logging.getLogger("menu_tools")
 
 def get_menu_info(menu_name: str = None) -> Dict[str, Any]:
-    """
-    메뉴 이름으로 메뉴 정보 가져오기
-    
-    Args:
-        menu_name: 메뉴 이름 (ex. '아메리카노', '카페라떼')
-    
-    Returns:
-        메뉴 정보 딕셔너리 (이름, 가격, 옵션 등)
-    """
     try:
         logger.info(f"메뉴 정보 조회: {menu_name}")
         
@@ -47,12 +38,6 @@ def get_menu_info(menu_name: str = None) -> Dict[str, Any]:
         return {"status": "error", "message": f"메뉴 정보 조회 중 오류 발생: {str(e)}"}
 
 def get_all_menus() -> Dict[str, Any]:
-    """
-    모든 메뉴 정보 가져오기
-    
-    Returns:
-        카테고리별 메뉴 목록
-    """
     try:
         logger.info("전체 메뉴 목록 조회")
         
@@ -66,19 +51,8 @@ def get_all_menus() -> Dict[str, Any]:
         return {"status": "error", "message": f"메뉴 목록 조회 중 오류 발생: {str(e)}"}
 
 def get_menu_options(menu_name: str) -> Dict[str, Any]:
-    """
-    메뉴의 옵션 정보 가져오기
-    
-    Args:
-        menu_name: 메뉴 이름
-    
-    Returns:
-        메뉴 옵션 정보 (필수 옵션, 선택 옵션 등)
-    """
     try:
         logger.info(f"메뉴 옵션 조회: {menu_name}")
-        
-        # 메뉴 정보 가져오기
         menu_info = get_menu_info(menu_name)
         
         if menu_info["status"] == "error":
@@ -134,4 +108,30 @@ def get_menu_options(menu_name: str) -> Dict[str, Any]:
         
     except Exception as e:
         logger.error(f"메뉴 옵션 조회 오류: {str(e)}")
-        return {"status": "error", "message": f"메뉴 옵션 조회 중 오류 발생: {str(e)}"} 
+        return {"status": "error", "message": f"메뉴 옵션 조회 중 오류 발생: {str(e)}"}
+
+def _load_menu_data() -> List[Dict[str, Any]]:
+    
+    menu_result = get_all_menus()
+    if menu_result["status"] != "success":
+        logger.warning("메뉴 데이터 로드 실패")
+        return []
+        
+    menu_data = []
+    for category in menu_result.get("categories", []):
+        if hasattr(category, 'items'):
+            for item in category.items:
+                menu_data.append({
+                    "name": item.name,
+                    "base_price": item.base_price,
+                    "category": category.name
+                })
+        else:
+            for item in category.get("items", []):
+                menu_data.append({
+                    "name": item.get("name", ""),
+                    "base_price": item.get("base_price", 0),
+                    "category": category.get("name", "")
+                })
+            
+    return menu_data

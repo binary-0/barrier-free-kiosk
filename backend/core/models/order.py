@@ -1,6 +1,6 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class OrderSession(BaseModel):
     session_id: str
@@ -8,6 +8,7 @@ class OrderSession(BaseModel):
     last_updated: datetime
     current_order: Optional[Dict[str, Any]] = None
     pending_clarifications: List[str] = []
+    processed_clarifications: Set[str] = set()
     conversation_history: List[Dict[str, str]] = []
 
 class OrderSessionManager:
@@ -59,7 +60,7 @@ class OrderSessionManager:
             return
         
         session = self.sessions[session_id]
-        if clarification not in session.pending_clarifications:
+        if clarification not in session.pending_clarifications and clarification not in session.processed_clarifications:
             session.pending_clarifications.append(clarification)
     
     def remove_pending_clarification(self, session_id: str, clarification: str):
@@ -76,4 +77,33 @@ class OrderSessionManager:
         
         session = self.sessions[session_id]
         if session.pending_clarifications:
-            session.pending_clarifications.pop(0) 
+            clarification = session.pending_clarifications.pop(0)
+            session.processed_clarifications.add(clarification)
+            
+    def cleanup_old_sessions(self, max_age_minutes: int = 30):
+        now = datetime.now()
+        expired_time = now - timedelta(minutes=max_age_minutes)
+        
+        sessions_to_remove = []
+        
+        for session_id, session in self.sessions.items():
+            if session.last_updated < expired_time:
+                sessions_to_remove.append(session_id)
+        
+        for session_id in sessions_to_remove:
+            del self.sessions[session_id]
+            
+        return len(sessions_to_remove)
+    
+    def get_all_sessions_info(self) -> List[Dict[str, Any]]:
+        result = []
+        for session_id, session in self.sessions.items():
+            result.append({
+                "session_id": session_id,
+                "created_at": session.created_at.isoformat(),
+                "last_updated": session.last_updated.isoformat(),
+                "pending_clarifications_count": len(session.pending_clarifications),
+                "processed_clarifications_count": len(session.processed_clarifications),
+                "conversation_history_count": len(session.conversation_history)
+            })
+        return result 

@@ -15,8 +15,8 @@ def analyze_order(state: WorkflowState) -> Dict[str, Any]:
         # API 키 -> env 파일에서 긁어와야함
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            logger.error("OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.")
-            raise ValueError("OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.")
+            logger.error("OPENAI_API_KEY env var 설정 X")
+            raise ValueError("OPENAI_API_KEY env var 설정 X")
             
         llm = ChatOpenAI(
             model="gpt-4o",
@@ -26,6 +26,9 @@ def analyze_order(state: WorkflowState) -> Dict[str, Any]:
         
         text_input = state.get('text', '')
         logger.info(f"LLM 분석 시작: 텍스트='{text_input}'")
+        
+        # 명확화 항목 해결 여부 플래그 초기화 (항상 이 플래그를 포함하도록)
+        state["pending_clarifications_resolved"] = False
         
         all_menus = get_all_menus()
         if all_menus.get("status") != "success":
@@ -58,22 +61,22 @@ def analyze_order(state: WorkflowState) -> Dict[str, Any]:
                                 option_texts.append(f"{opt.name}{price_text}")
                             menu_info += ", ".join(option_texts) + "\n"
         
-        system_prompt = f"""당신은 카페 주문을 돕는 AI 어시스턴트입니다.
-        사용자의 음성 주문을 분석하고, 주문을 정확하게 처리하기 위해 필요한 정보를 수집해야 합니다.
+        system_prompt = f"""당신은 카페 주문을 돕는 AI 어시스턴트이다.
+        사용자의 음성 주문을 분석하고, 주문을 정확하게 처리하기 위해 필요한 정보를 수집해야 한다.
         
-        아래 정보를 참고하세요:
+        아래 정보를 참고하라:
         {menu_info}
         
-        주문 분석 시 다음 사항을 고려해주세요:
+        주문 분석 시 다음 사항을 고려하라:
         1. 메뉴 이름과 수량
         2. 필수 옵션 (온도, 크기)
         3. 선택 옵션 (커피는 디카페인 여부, 티는 휘핑크림 추가 여부)
         4. 특별 요청사항
         
-        응답은 다음 JSON 형식으로 제공해주세요:
+        응답은 다음 JSON 형식으로 제공하라:
         {{
             "is_order_related": true or false,
-            "greeting_response": "주문과 관련 없는 대화인 경우 여기에 응답을 제공하세요",
+            "greeting_response": "주문과 관련 없는 대화인 경우 여기에 응답을 제공하라",
             "items": [
                 {{
                     "name": "메뉴명",
@@ -89,28 +92,28 @@ def analyze_order(state: WorkflowState) -> Dict[str, Any]:
         }}
         
         사용자의 입력이 주문과 관련이 없는 경우(예: 인사, 날씨 질문, 대화 나누기 등):
-        1. "is_order_related"를 false로 설정하세요.
-        2. "greeting_response"에 적절한 대화 응답을 제공하세요.
-        3. 다른 주문 관련 필드는 빈 배열이나 기본값으로 설정하세요.
-        4. 기존 주문 상태는 변경하지 마세요.
+        1. "is_order_related"를 false로 설정하라.
+        2. "greeting_response"에 적절한 대화 응답을 제공하라.
+        3. 다른 주문 관련 필드는 빈 배열이나 기본값으로 설정하라.
+        4. 기존 주문 상태는 변경하지 마라.
         
-        주문 내용이 불완전하거나 명확하지 않은 경우, 다음 규칙에 따라 명확화를 요청해주세요:
+        주문 내용이 불완전하거나 명확하지 않은 경우, 다음 규칙에 따라 명확화를 요청하라:
         
-        1. 항상 하나의 메뉴 항목당 필수 옵션(온도, 크기)이 모두 지정되었는지 확인하세요. 필수 옵션이 누락된 경우, "온도"와 "크기" 옵션에 대해 구체적으로 질문하세요.
+        1. 항상 하나의 메뉴 항목당 필수 옵션(온도, 크기)이 모두 지정되었는지 확인하라. 필수 옵션이 누락된 경우, "온도"와 "크기" 옵션에 대해 구체적으로 질문하라.
            - 온도 옵션이 누락된 경우: "<메뉴명>을 따뜻한 음료로 드릴까요, 차가운 음료로 드릴까요?"
            - 크기 옵션이 누락된 경우: "<메뉴명>을 레귤러 사이즈로 드릴까요, 라지 사이즈로 드릴까요?"
            
-        2. clarification_items 배열에는 한 번에 하나의 질문만 포함하세요. 여러 항목을 물어봐야 한다면 가장 중요한 것 하나만 질문하세요.
+        2. clarification_items 배열에는 한 번에 하나의 질문만 포함하라. 여러 항목을 물어봐야 한다면 가장 중요한 것 하나만 질문하라.
         
-        3. 가격을 직접 묻지 마세요. 가격은 메뉴 정보에서 확인할 수 있습니다.
+        3. 가격을 직접 묻지 마라. 가격은 메뉴 정보에서 확인할 수 있다.
         
-        4. 선택 옵션에 대해서도 물어볼 수 있습니다. 선택 옵션은 필수는 아니지만, 사용자 경험을 향상시킬 수 있습니다:
+        4. 선택 옵션에 대해서도 물어볼 수 있다. 선택 옵션은 필수는 아니지만, 사용자 경험을 향상시킬 수 있다:
            - 커피 메뉴의 경우: "<메뉴명>을 디카페인으로 드릴까요, 일반 카페인으로 드릴까요?"
            - 티 메뉴의 경우: "<메뉴명>에 휘핑크림을 추가할까요?"
            
-        5. 필수 옵션이 모두 선택되었고 더 이상 명확화할 항목이 없을 때, 사용자에게 "더 주문하실 것이 있으신가요?"라고 greeting_response에 추가하고, clarification_items은 빈 배열로 설정하세요.
+        5. 필수 옵션이 모두 선택되었고 더 이상 명확화할 항목이 없을 때, 사용자에게 "더 주문하실 것이 있으신가요?"라고 greeting_response에 추가하고, clarification_items은 빈 배열로 설정하라.
         
-        이전 대화와 보류 중인 명확화 항목을 고려하여 응답해주세요. 이미 응답된 항목에 대해서는 다시 물어보지 마세요.
+        이전 대화와 보류 중인 명확화 항목을 고려하여 응답하라. 이미 응답된 항목에 대해서는 다시 물어보지 마라라.
         """
         
         messages = [SystemMessage(content=system_prompt)]
